@@ -64,7 +64,7 @@ public class ConfigurationWindow extends PopupWindow {
 		//
 		this.setSize(200, 200);
 		adjustLocation();
-		this.setBackground(new Color(223, 191, 134));
+//		this.setBackground(new Color(223, 191, 134));
 		this.setTitle("对局设置");
 		this.setIconImage(ApplicationUtil.getImage("logo"));
 		this.getContentPane().setLayout(null);

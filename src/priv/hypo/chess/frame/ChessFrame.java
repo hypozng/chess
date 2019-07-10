@@ -58,11 +58,6 @@ public class ChessFrame extends JFrame implements ChessPieceListener, GameListen
 	// Fields
 	private static final long serialVersionUID = -1183777640924992228L;
 
-	/** 状态文本颜色-红色 */
-	private static final Color STATE_RED = new Color(156, 15, 0);
-	/** 状态文本颜色-黑色 */
-	private static final Color STATE_BLACK = new Color(11, 22, 25);
-
 	private static final Font STATUS_FONT = new Font("STXingkai", Font.CENTER_BASELINE, 32);
 
 	// 棋盘背景图片
@@ -450,28 +445,28 @@ public class ChessFrame extends JFrame implements ChessPieceListener, GameListen
 			ChessRole winner = gameService.getWinner();
 			if (winner.equals(ChessRole.RED)) {
 				text = "红旗胜";
-				color = STATE_RED;
+				color = Global.STATE_RED_COLOR;
 			} else if (winner.equals(ChessRole.BLACK)) {
 				text = "黑旗胜";
-				color = STATE_BLACK;
+				color = Global.STATE_BLACK_COLOR;
 			}
 		} else if (gameService.isChecking()) {
 			ChessRole checker = gameService.getCurrentRole();
 			if (checker.equals(ChessRole.RED)) {
 				text = "黑旗将军";
-				color = STATE_BLACK;
+				color = Global.STATE_BLACK_COLOR;
 			} else if (checker.equals(ChessRole.BLACK)) {
 				text = "红旗将军";
-				color = STATE_RED;
+				color = Global.STATE_RED_COLOR;
 			}
 		} else {
 			ChessRole role = gameService.getCurrentRole();
 			if (role.equals(ChessRole.BLACK)) {
 				text = "黑方走棋";
-				color = STATE_BLACK;
+				color = Global.STATE_BLACK_COLOR;
 			} else if (role.equals(ChessRole.RED)) {
 				text = "红方走棋";
-				color = STATE_RED;
+				color = Global.STATE_RED_COLOR;
 			}
 		}
 
