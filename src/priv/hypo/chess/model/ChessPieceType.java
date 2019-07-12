@@ -5,17 +5,23 @@ package priv.hypo.chess.model;
  */
 public enum ChessPieceType {
 	/** 車 */
-	ROOK,
+	ROOK("車"),
 	/** 马 */
-	KNIGHT,
+	KNIGHT("马"),
 	/** 象 */
-	BISHOP,
+	BISHOP("象"),
 	/** 仕 */
-	GUARD,
+	GUARD("仕"),
 	/** 将 */
-	KING,
+	KING("将"),
 	/** 炮 */
-	CANNON,
+	CANNON("炮"),
 	/** 兵 */
-	PAWN
+	PAWN("兵");
+
+    private String text;
+
+    private ChessPieceType(String text){
+        this.text = text;
+    }
 }

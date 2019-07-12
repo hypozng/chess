@@ -18,10 +18,7 @@ import priv.hypo.chess.listener.RoomListener;
 import priv.hypo.chess.logic.ComputerPlayer;
 import priv.hypo.chess.model.ChessBoard;
 import priv.hypo.chess.model.ChessPiece;
-import priv.hypo.chess.model.ChessPieceCannon;
 import priv.hypo.chess.model.ChessPieceKing;
-import priv.hypo.chess.model.ChessPieceKnight;
-import priv.hypo.chess.model.ChessPieceRook;
 import priv.hypo.chess.model.ChessPieceType;
 import priv.hypo.chess.model.ChessRecord;
 import priv.hypo.chess.model.ChessRole;
@@ -41,7 +38,7 @@ public class GameService implements RoomListener {
 	private static GameService instance;
 
 	// 棋盘
-	private ChessBoard chessBoard = new ChessBoard();
+	private ChessBoard chessBoard;
 
 	// 当前选中的棋子
 	private ChessPiece selected = null;
@@ -75,8 +72,7 @@ public class GameService implements RoomListener {
 
 	// Constructors
 	private GameService() {
-		init(null);
-		roomService.addListener(this);
+        roomService.addListener(this);
 	}
 
 	// Property accessors
@@ -212,35 +208,6 @@ public class GameService implements RoomListener {
 			}
 		}
 	}
-	
-	/**
-	 * 用指定的步骤走棋，如果直接会导致输掉比赛返回true
-	 * 
-	 * @param piece
-	 * @param x
-	 * @param y
-	 * @return
-	 */
-	public boolean willLose(ChessPiece piece, int x, int y) {
-		Point origin = new Point(piece.getLocation());
-		ChessPiece enemy = chessBoard.getPiece(x, y);
-		chessBoard.move(piece, x, y);
-		if (isChecking(currentRole)) {
-			return true;
-		}
-		chessBoard.move(piece, origin);
-		if (enemy != null) {
-			chessBoard.setPiece(x, y, enemy);
-		}
-		return false;
-	}
-
-	public boolean willLose(ChessPiece piece, Point target) {
-		if (piece == null || target == null) {
-			return false;
-		}
-		return willLose(piece, target.x, target.y);
-	}
 
 	/**
 	 * 选中一个棋子
@@ -263,77 +230,84 @@ public class GameService implements RoomListener {
 	 * 取消选择
 	 */
 	public void deselect() {
-		if (selected != null) {
-			ChessPiece selected = this.selected;
-			this.selected = null;
-			postEvent(new ChessPieceEvent(ChessPieceEvent.PIECE_DESELECTED, selected, selected.getLocation()));
+		if (selected == null) {
+            return;
 		}
+        ChessPiece selected = this.selected;
+        this.selected = null;
+        postEvent(new ChessPieceEvent(ChessPieceEvent.PIECE_DESELECTED, selected, selected.getLocation()));
 	}
 
-	/**
+    /**
+     * 判断按照指定步骤走棋是否有效
+     *  若按照指定步骤走棋会导致被将军则视为无效的步骤
+     * @param step 棋子移动信息
+     * @return 返回true表示步骤有效，返回false表示步骤无效
+     */
+    public boolean isValidStep(ChessStep step) {
+        if (step == null) {
+            return false;
+        }
+        ChessPiece enemy = chessBoard.getPiece(step.getTarget());
+        chessBoard.move(step);
+        boolean flag = !kingHasThreaten(step.getPiece().getRole());
+        chessBoard.move(step.back());
+        if (enemy != null) {
+            chessBoard.setPiece(step.getTarget(), enemy);
+        }
+        return flag;
+    }
+
+    /**
 	 * 移动一个棋子
-	 * 
-	 * @param piece
-	 *            要移动的棋子
-	 * @param x
-	 *            目标位置的x值
-	 * @param y
-	 *            目标位置的y值
+	 * @param step 棋子移动信息
 	 */
-	public void move(ChessPiece piece, int x, int y) {
-		if (winner != null || piece == null) {
+	public void move(ChessStep step) {
+		if (winner != null || step == null) {
 			return;
 		}
-		Point origin = new Point(piece.getLocation()), target = new Point(x, y);
-		ChessPiece enemy = chessBoard.getPiece(x, y);
-		if (willLose(piece, x, y)) {
+		if (!isValidStep(step)) {
 			deselect();
 			return;
 		}
-		chessBoard.move(piece, target);
-		postEvent(new ChessPieceEvent(ChessPieceEvent.PIECE_MOVED, piece, origin));
-		if (roomService.exist() && roomService.getRole().equals(piece.getRole())) {
-			roomService.movePiece(origin, target);
-		}
-		kill(enemy);
+        ChessPiece killed = chessBoard.getPiece(step.getTarget());
+		chessBoard.move(step);
+		postEvent(new ChessPieceEvent(ChessPieceEvent.PIECE_MOVED, step.getPiece(), step.getOrigin()));
+		kill(killed);
 		deselect();
-		records.addLast(new ChessRecord(origin, target, piece, enemy));
+		records.addLast(new ChessRecord(step, killed));
+        if (roomService.exist() && roomService.getRole().equals(currentRole)) {
+            roomService.movePiece(step);
+        }
 
-		currentRole = piece.getRole().getEnemy();
-		if (isChecking()) {
-			if (getCheckStrategies().isEmpty()) {
-				winner = ApplicationUtil.getEnemy(currentRole);
-			}
-		}
-		if (chessBoard.getPieces(currentRole).size() == 1) {
-			ChessPiece king = chessBoard.getKing(currentRole);
-			List<Point> movedLocations = new ArrayList<Point>();
-			movedLocations.addAll(king.getValidTargets());
-			boolean flag = false;
-			for (Point movedLocation : movedLocations) {
-				if (!willLose(king, movedLocation)) {
-					flag = true;
-					break;
-				}
-			}
-			if (!flag) {
-				winner = ApplicationUtil.getEnemy(currentRole);
-			}
-		}
+        checkOver();
+		currentRole = currentRole.getEnemy();
 	}
 
-	/**
-	 * 移动一个棋子
-	 * 
-	 * @param piece
-	 * @param target
-	 */
-	public void move(ChessPiece piece, Point target) {
-		if (target == null) {
-			return;
-		}
-		move(piece, target.x, target.y);
-	}
+    /**
+     * 检测是否结束
+     * @return
+     */
+    public void checkOver() {
+        // 被将军，没有任何有效的解决方案
+        if (kingHasThreaten(currentRole.getEnemy())) {
+            if (solveKingThreaten(currentRole.getEnemy()).isEmpty()) {
+                winner = currentRole;
+            }
+        }
+
+        // 进剩下将/帅，将/帅无法移动到安全位置
+        if (chessBoard.getPieces(currentRole.getEnemy()).size() == 1) {
+            ChessPiece king = chessBoard.getKing(currentRole.getEnemy());
+            for (Point target : king.getValidTargets()) {
+                ChessStep step = new ChessStep(king, target);
+                if (isValidStep(step)) {
+                    return;
+                }
+            }
+            winner = currentRole;
+        }
+    }
 
 	/**
 	 * 杀死一个棋子
@@ -352,52 +326,46 @@ public class GameService implements RoomListener {
 	/**
 	 * 处理棋盘的点击事件
 	 * 
-	 * @param x
-	 * @param y
+	 * @param x 棋盘点击位置的x值
+	 * @param y 棋盘点击位置的y值
 	 */
 	public void click(int x, int y) {
-		if (winner != null || !chessBoard.inBoard(x, y)) {
+		if (winner != null || chessBoard == null || !chessBoard.inBoard(x, y)) {
 			return;
 		}
-		ChessPiece piece = chessBoard.getPiece(x, y);
-		if (selected != null) {
-			if (selected.isValidTarget(x, y)) {
-				move(selected, x, y);
-			} else {
-				if (piece != null) {
-					if (selected == piece) {
-						deselect();
-					} else if (selected.getRole() == piece.getRole()) {
-						select(piece);
-					}
-				} else {
-					deselect();
-				}
-			}
-		} else {
-			if (piece != null && piece.getRole() == currentRole) {
-				select(piece);
-			}
-		}
+        Point target = new Point(x, y);
+		ChessPiece piece = chessBoard.getPiece(target);
+        if (selected == piece) {
+            deselect();
+            return;
+        }
+        if (piece != null && piece.getRole().equals(currentRole)) {
+            select(piece);
+            return;
+        }
+        if (selected != null && selected.isValidTarget(target)) {
+            move(new ChessStep(selected, target));
+            return;
+        }
 	}
 
 	/**
 	 * 悔棋
 	 */
 	public void revoke(boolean send) {
-		winner = null;
 		deselect();
 		if (records.isEmpty()) {
 			return;
 		}
+        winner = null;
 		ChessRecord record = records.getLast();
 		chessBoard.move(record.getPiece(), record.getOrigin());
 		if (record.getKilled() != null) {
 			chessBoard.setPiece(record.getTarget(), record.getKilled());
 		}
 		currentRole = record.getPiece().getRole();
-		postEvent(new GameEvent(GameEvent.REVOKE, this));
-		records.removeLast();
+        postEvent(new GameEvent(GameEvent.REVOKE, this));
+        records.removeLast();
 		if (roomService.exist()) {
 			if (send) {
 				roomService.revoke();
@@ -409,48 +377,60 @@ public class GameService implements RoomListener {
 	}
 
 	/**
-	 * 判断指定的king是否能够被杀死，可以用来判断“将军”
-	 * 
-	 * @param king
-	 *            要判断的king
-	 * @return 返回true表示能够被杀死，返回false表示不能够被杀死
+	 * 获取将/帅的威胁 如果棋子能够击杀将/帅则视为威胁
+	 * @param role 将/帅的角色
+     * @param single 仅查找一个就直接返回
+	 * @return 返回能够击杀将/帅的棋子
 	 */
-	public List<ChessPiece> getCheckers(ChessRole role) {
+	public List<ChessPiece> getKingThreatens(ChessRole role, boolean single) {
 		ChessPiece king = chessBoard.getKing(role);
-		List<ChessPiece> checkers = new ArrayList<ChessPiece>();
+		List<ChessPiece> threatens = new ArrayList<ChessPiece>();
 		if (king != null) {
-			List<ChessPiece> pieces = chessBoard.getPieces(ApplicationUtil.getEnemy(king.getRole()));
+			List<ChessPiece> pieces = chessBoard.getPieces(role.getEnemy());
 			for (ChessPiece piece : pieces) {
-				if (piece.getType() == ChessPieceType.GUARD || piece.getType() == ChessPieceType.BISHOP) {
-					continue;
-				}
-				if (piece.getValidTargets().contains(king.getLocation())) {
-					checkers.add(piece);
-				}
-			}
+                if (piece.getType().equals(ChessPieceType.GUARD)
+                        || piece.getType().equals(ChessPieceType.BISHOP)) {
+                    continue;
+                }
+                if (piece.getValidTargets().contains(king.getLocation())) {
+                    threatens.add(piece);
+                    if (single) {
+                        return threatens;
+                    }
+                }
+            }
 		}
-		return checkers;
+		return threatens;
 	}
 
-	public boolean isChecking(ChessRole role) {
+    /**
+     *
+     * @param role
+     * @return
+     */
+    public List<ChessPiece> getKingThreatens(ChessRole role) {
+        return getKingThreatens(role, false);
+    }
+
+    /**
+     * 判断是否被将军
+     * @param role
+     *      判断的角色
+     * @return 如果指定的角色正在被将军则返回true，否则返回false
+     */
+	public boolean kingHasThreaten(ChessRole role) {
 		if (role == null) {
 			return false;
 		}
-		ChessPiece king = chessBoard.getKing(role);
-		List<ChessPiece> pieces = chessBoard.getPieces(ApplicationUtil.getEnemy(king.getRole()));
-		for (ChessPiece piece : pieces) {
-			if (piece.getType() == ChessPieceType.GUARD || piece.getType() == ChessPieceType.BISHOP) {
-				continue;
-			}
-			if (piece.getValidTargets().contains(king.getLocation())) {
-				return true;
-			}
-		}
-		return false;
+        return !getKingThreatens(role, true).isEmpty();
 	}
 
-	public boolean isChecking() {
-		return !this.getCheckers(currentRole).isEmpty();
+    /**
+     * 判断当前的角色是否正在被将军
+     * @return 如果当前的角色正在被将军则返回true，否则返回false
+     */
+	public boolean kingHasThreaten() {
+		return kingHasThreaten(currentRole);
 	}
 
 	/**
@@ -458,79 +438,72 @@ public class GameService implements RoomListener {
 	 * 
 	 * @return
 	 */
-	public List<ChessStep> getCheckStrategies() {
-		List<ChessStep> strategies = new ArrayList<ChessStep>();
-		ChessPieceKing king = chessBoard.getKing(currentRole);
+	public List<ChessStep> solveKingThreaten(ChessRole role) {
+        if (role == null) {
+            return null;
+        }
+        List<ChessStep> steps = new ArrayList<ChessStep>();
+        List<ChessPiece> threatens = getKingThreatens(role);
+        if (threatens == null || threatens.isEmpty()) {
+            return steps;
+        }
+
+        ChessPieceKing king = chessBoard.getKing(role);
 		int kx = king.getLocation().x, ky = king.getLocation().y;
-		List<ChessPiece> checkers = getCheckers(currentRole);
-		if (checkers == null || checkers.isEmpty()) {
-			return strategies;
-		}
 		List<ChessPiece> pieces = chessBoard.getPieces(currentRole);
+
 		// 方案一 (吃掉将军的棋子)
-		for (ChessPiece checker : checkers) {
+		for (ChessPiece threaten : threatens) {
 			for (ChessPiece piece : pieces) {
-				// List<Point> movedLocations = piece.getNewMovedLocations();
-				List<Point> validTargets = piece.getValidTargets();
-				int index = validTargets.indexOf(checker.getLocation());
-				if (index >= 0) {
-					Point target = new Point(validTargets.get(index));
-					if (!willLose(piece, target)) {
-						strategies.add(new ChessStep(piece, piece.getLocation(), target));
-					}
-				}
+                if (piece.getValidTargets().contains(threaten.getLocation())) {
+                    ChessStep step = new ChessStep(piece, threaten.getLocation());
+                    if (isValidStep(step)) {
+                        steps.add(step);
+                    }
+                }
 			}
 		}
 
 		// 方案二 (帅将移动)
-		for (Point movedLocation : king.getValidTargets()) {
-			if (!willLose(king, movedLocation)) {
-				strategies.add(new ChessStep(king, king.getLocation(), movedLocation));
+		for (Point target : king.getValidTargets()) {
+            ChessStep step = new ChessStep(king, target);
+			if (isValidStep(step)) {
+				steps.add(step);
 			}
 		}
 
 		// 方案三 (设置障碍)
-		for (ChessPiece checker : checkers) {
+		for (ChessPiece threaten : threatens) {
 			List<Point> hinders = new ArrayList<Point>();
-			int cx = checker.getLocation().x, cy = checker.getLocation().y;
-			if (checker instanceof ChessPieceRook || checker instanceof ChessPieceCannon) {
-				// 车炮将
-				int init = 0, limit = 0;
-				Point hinder = null;
-				if (cx == kx) {
-					init = Math.min(cy, ky) + 1;
-					limit = Math.max(cy, ky);
-				} else {
-					init = Math.min(cx, kx) + 1;
-					limit = Math.max(cx, kx);
-				}
-				for (int i = init; i < limit; ++i) {
-					if (cx == kx) {
-						hinder = new Point(cx, i);
-					} else {
-						hinder = new Point(i, cy);
-					}
-					if (!chessBoard.hasPiece(hinder)) {
-						hinders.add(hinder);
-					}
-				}
-			} else if (checker instanceof ChessPieceKnight) {
-				// 马将
-				if (cx == kx - 2) {
-					hinders.add(new Point(cx + 1, cy));
-				} else if (cx == kx + 2) {
-					hinders.add(new Point(cx - 1, cy));
-				} else if (cy == ky - 2) {
-					hinders.add(new Point(cx, cy + 1));
-				} else if (cy == ky + 2) {
-					hinders.add(new Point(cx, cy - 1));
-				}
-			}
+			int tx = threaten.getLocation().x, ty = threaten.getLocation().y;
+            switch (threaten.getType()) {
+                case ROOK:
+                case CANNON:
+                    // 车炮将
+                    boolean flag = tx == kx;
+                    int start = Math.min(flag ? ty : tx, flag ? ky : kx) + 1;
+                    int end = Math.max(flag ? ty : tx, flag ? ky : kx);
+                    for (int i = start; i < end; ++i) {
+                        int hx = flag ? tx : i, hy = flag ? i : ty;
+                        Point hinder = new Point(hx, hy);
+                        if (!chessBoard.hasPiece(hinder)) {
+                            hinders.add(hinder);
+                        }
+                    }
+                    break;
+                case KNIGHT:
+                    // 马将
+                    int hx = kx + (tx > kx ? 1 : -1);
+                    int hy = ky + (ty > ky ? 1 : -1);
+                    hinders.add(new Point(hx, hy));
+                    break;
+            }
 			for (Point hinder : hinders) {
 				for (ChessPiece piece : pieces) {
 					if (piece.getValidTargets().contains(hinder)) {
-						if (!willLose(piece, hinder)) {
-							strategies.add(new ChessStep(piece, piece.getLocation(), hinder));
+                        ChessStep step = new ChessStep(piece, hinder);
+						if (isValidStep(step)) {
+							steps.add(step);
 						}
 					}
 				}
@@ -538,90 +511,52 @@ public class GameService implements RoomListener {
 		}
 
 		// 方案4 (撤炮架)
-		for (ChessPiece checker : checkers) {
-			int cx = checker.getLocation().x, cy = checker.getLocation().y;
-			ChessPiece pivot = null;
-			if (checker instanceof ChessPieceCannon) {
-				int init = 0, limit = 0;
-				if (cx == kx) {
-					init = Math.min(cy, ky) + 1;
-					limit = Math.max(cy, ky);
-				} else {
-					init = Math.min(cx, kx) + 1;
-					limit = Math.max(cx, kx);
-				}
-				for (int i = init; i < limit; ++i) {
-					if (cx == kx) {
-						pivot = chessBoard.getPiece(cx, i);
-					} else {
-						pivot = chessBoard.getPiece(i, cy);
-					}
-					if (pivot != null) {
-						if (pivot.getRole() != king.getRole()) {
-							pivot = null;
-						}
-						break;
-					}
-				}
-			}
-			if (pivot != null) {
-				for (Point movedLocation : pivot.getValidTargets()) {
-					if (!willLose(pivot, movedLocation)) {
-						strategies.add(new ChessStep(pivot, pivot.getLocation(), movedLocation));
-					}
-				}
-			}
+		for (ChessPiece threaten : threatens) {
+            if (!threaten.getType().equals(ChessPieceType.CANNON)) {
+                continue;
+            }
+			int tx = threaten.getLocation().x, ty = threaten.getLocation().y;
+            boolean flag = tx == kx;
+            int start = Math.min(flag ? ty : tx, flag ? ky : kx) + 1;
+            int end = Math.max(flag ? ty : tx, flag ? ky : kx);
+            for (int i = start; i < end; ++i) {
+                int px = flag ? tx : i, py = flag ? i : ty;
+                ChessPiece pivot = chessBoard.getPiece(px, py);
+                if (pivot == null) {
+                    continue;
+                }
+                if (!pivot.getRole().equals(king.getRole())) {
+                    break;
+                }
+                for (Point target : pivot.getValidTargets()) {
+                    ChessStep step = new ChessStep(pivot, target);
+                    if (isValidStep(step)) {
+                        steps.add(step);
+                    }
+                }
+            }
 		}
-		return strategies;
+        System.out.println("======== solve king threaten steps ========");
+        for (ChessStep step : steps) {
+            System.out.println(step);
+        }
+        System.out.println("================================");
+		return steps;
 	}
+
+    public List<ChessStep> solveKingThreaten() {
+        return solveKingThreaten(currentRole);
+    }
 
 	/**
 	 * 判断游戏是否已结束
 	 * 
 	 * @return
 	 */
-	public boolean isGameover() {
+	public boolean isOver() {
 		return winner != null;
 	}
 
-	/**
-	 * 随机走棋
-	 */
-	public void randomMove() {
-		if (winner != null) {
-			return;
-		}
-
-		if (isChecking(currentRole)) {
-			List<ChessStep> steps = getCheckStrategies();
-			if (steps.isEmpty()) {
-				return;
-			}
-			ChessStep step = steps.get(ApplicationUtil.random(steps.size()));
-			move(step.getPiece(), step.getTarget());
-			return;
-		}
-		List<ChessPiece> pieces = chessBoard.getPieces(currentRole);
-		for (ChessPiece piece : pieces) {
-			for (Point target : piece.getValidTargets()) {
-				ChessPiece enemy = chessBoard.getPiece(target);
-				if (enemy != null && enemy.getRole() != piece.getRole()) {
-					if (!willLose(piece, target)) {
-						move(piece, target);
-						return;
-					}
-				}
-			}
-		}
-		Point target = null;
-		ChessPiece piece = null;
-		do {
-			piece = ApplicationUtil.randomGet(pieces);
-			target = ApplicationUtil.randomGet(piece.getValidTargets());
-		} while (willLose(piece, target));
-		move(piece, target);
-	}
-	
 	/**
 	 * 通知可以走下一步了
 	 */
@@ -679,7 +614,7 @@ public class GameService implements RoomListener {
 
 	@Override
 	public void onMove(Point origin, Point target) {
-		move(chessBoard.getPiece(origin), target);
+		move(new ChessStep(chessBoard.getPiece(origin), target));
 	}
 
 	@Override

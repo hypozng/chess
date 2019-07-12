@@ -3,6 +3,7 @@ package priv.hypo.chess.model;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -87,10 +88,25 @@ public abstract class ChessPiece implements java.io.Serializable {
 		if(chessBoard.getLayoutVersion() != boardLayoutVersion) {
 			validTargets = new ArrayList<Point>();
 			findValidTargets(validTargets);
+            removeInvalidTargets();
 			boardLayoutVersion = chessBoard.getLayoutVersion();
 		}
 		return validTargets;
 	}
+
+    /**
+     * 删除无效的目标点（若目标点被己方棋子占用则视为无效）
+     */
+    private void removeInvalidTargets() {
+        Iterator<Point> iter = validTargets.iterator();
+        while (iter.hasNext()) {
+            Point target = iter.next();
+            ChessPiece piece = chessBoard.getPiece(target);
+            if (piece != null && piece.getRole().equals(role)) {
+                iter.remove();
+            }
+        }
+    }
 	
 	/**
 	 * 判断当前的棋子是否可以移动到指定的位置

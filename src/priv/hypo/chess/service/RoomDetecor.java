@@ -51,7 +51,6 @@ public class RoomDetecor implements Receiver.Listener {
 		receiver.setPort(RoomBroadcast.ROOM_BROADCAST_PORT);
 		receiver.setListener(this);
 		receiver.init();
-		receiver.open();
 	}
 	
 	@Override

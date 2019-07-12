@@ -16,16 +16,14 @@ import java.util.Map;
 public class ChessBoard implements java.io.Serializable {
 	private static final long serialVersionUID = -4201670298962888493L;
 
-	public static final int DEFAULT_WIDTH = 9;
+	public static final int WIDTH = 9;
 
-	public static final int DEFAULT_HEIGHT = 10;
+	public static final int HEIGHT = 10;
 
-	public static final Dimension DEFAULT_SIZE = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+	public static final Dimension DEFAULT_SIZE = new Dimension(WIDTH, HEIGHT);
 
 	// 棋子
-	private ChessPiece[][] pieces = new ChessPiece[DEFAULT_WIDTH][DEFAULT_HEIGHT];
-	// 棋盘的大小
-	private Dimension size = new Dimension(pieces.length, pieces[0].length);
+	private ChessPiece[][] pieces = new ChessPiece[WIDTH][HEIGHT];
 	// 将帅
 	private Map<ChessRole, ChessPieceKing> kings = new HashMap<ChessRole, ChessPieceKing>();
 	// 分角色暂存的棋子
@@ -43,17 +41,7 @@ public class ChessBoard implements java.io.Serializable {
 
 	/** 获取棋盘的大小 */
 	public Dimension getSize() {
-		return size;
-	}
-
-	/** 获取棋盘的宽度 */
-	public int getWidth() {
-		return size.width;
-	}
-
-	/** 获取棋盘的高度 */
-	public int getHeight() {
-		return size.height;
+		return new Dimension(WIDTH, HEIGHT);
 	}
 
 	/** 获取棋盘布局版本号 */
@@ -71,7 +59,7 @@ public class ChessBoard implements java.io.Serializable {
 	 * @return 如果该点能够在棋盘中对应一个位置则返回true，否则返回false
 	 */
 	public boolean inBoard(int x, int y) {
-		return (x >= 0 && y >= 0) && (x < size.width && y < size.height);
+		return (x >= 0 && y >= 0) && (x < WIDTH && y < HEIGHT);
 	}
 
 	/**
@@ -120,7 +108,7 @@ public class ChessBoard implements java.io.Serializable {
 	 * @return 如果该点在棋盘的上半部分则返回true，否则返回false
 	 */
 	public boolean inBoardUpBound(int x, int y) {
-		return (x >= 0 && y >= 0) && (x < size.width && y < size.height / 2);
+		return (x >= 0 && y >= 0) && (x < WIDTH && y < HEIGHT / 2);
 	}
 
 	/**
@@ -147,13 +135,13 @@ public class ChessBoard implements java.io.Serializable {
 	 * @return 如果该点在棋盘的下半部分则返回true，否则返回false
 	 */
 	public boolean inBoardDownBound(int x, int y) {
-		return (x >= 0 && y >= size.height / 2) && (x < size.width && y < size.height);
+		return (x >= 0 && y >= HEIGHT / 2) && (x < WIDTH && y < HEIGHT);
 	}
 
 	/**
 	 * 判断一个点是否在棋盘的下半部分
 	 * 
-	 * @param point
+	 * @param location
 	 *            要判断的点
 	 * @return 如果该点在棋盘的下半部分则返回true，否则返回false
 	 */
@@ -240,7 +228,7 @@ public class ChessBoard implements java.io.Serializable {
 	 * @return 如果该点在棋盘的下宫内则返回true，否则返回false
 	 */
 	public boolean inBoardDownPalace(int x, int y) {
-		return (x >= 3 && y >= 7) && (x < 6 && y < size.height);
+		return (x >= 3 && y >= 7) && (x < 6 && y < HEIGHT);
 	}
 
 	/**
@@ -294,41 +282,6 @@ public class ChessBoard implements java.io.Serializable {
 			return false;
 		}
 		return inBoardSamePalace(point1.x, point1.y, point2.x, point2.y);
-	}
-
-	/**
-	 * 判断在当前棋盘中指定的棋子是否能够移动到指定的位置
-	 * 
-	 * @param piece
-	 *            要移动的棋子
-	 * @param x
-	 *            目标位置的x值
-	 * @param y
-	 *            目标位置的y值
-	 * @return 如果棋子能够移动到指定的位置则返回true，否则返回false
-	 */
-	public boolean isReachablePoint(ChessPiece piece, int x, int y) {
-		if (piece != null && inBoard(x, y)) {
-			ChessPiece enemy = getPiece(x, y);
-			return enemy == null || !piece.getRole().equals(enemy.getRole());
-		}
-		return false;
-	}
-
-	/**
-	 * 判断在当前棋盘中指定的棋子是否能够移动到指定的位置
-	 * 
-	 * @param piece
-	 *            要移动的棋子
-	 * @param target
-	 *            目标位置
-	 * @return 如果棋子能够移动到指定的位置则返回true，否则返回false
-	 */
-	public boolean isReachablePoint(ChessPiece piece, Point target) {
-		if (target == null) {
-			return false;
-		}
-		return isReachablePoint(piece, target.x, target.y);
 	}
 
 	/**
@@ -503,6 +456,18 @@ public class ChessBoard implements java.io.Serializable {
 		move(piece, target.x, target.y);
 	}
 
+    /**
+     * 按照指定的步骤信息移动棋盘中的棋子
+     *
+     * @param step 步骤信息
+     */
+    public void move(ChessStep step) {
+        if (step == null) {
+            return;
+        }
+        move(step.getPiece(), step.getTarget());
+    }
+
 	/**
 	 * 清空棋盘中的所有棋子
 	 */
@@ -571,8 +536,8 @@ public class ChessBoard implements java.io.Serializable {
 
 	/**
 	 * 查找将帅
-	 * 
-	 * @param pieces
+	 *
+	 * @param role 将/帅角色
 	 * @return
 	 */
 	public ChessPieceKing getKing(ChessRole role) {

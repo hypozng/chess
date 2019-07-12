@@ -29,6 +29,13 @@ public class ChessRecord implements java.io.Serializable{
 		this.killed = killed;
 	}
 
+    public ChessRecord(ChessStep step, ChessPiece killed) {
+        this.origin = step.getOrigin();
+        this.target = step.getTarget();
+        this.piece = step.getPiece();
+        this.killed = killed;
+    }
+
 	// Property accessors
 	public Point getOrigin() {
 		return origin;

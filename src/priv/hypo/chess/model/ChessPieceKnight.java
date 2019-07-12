@@ -22,33 +22,24 @@ public class ChessPieceKnight extends ChessPiece {
 		}
 
 		int x = location.x, y = location.y;
-		Point[] hinders = new Point[] {
-				new Point(x, y - 1),
-				new Point(x, y + 1),
-				new Point(x - 1, y),
-				new Point(x + 1, y),
-			};
-		Point[] points = new Point[] {
-				new Point(x - 1, y - 2),
-				new Point(x + 1, y - 2),
-				new Point(x - 1, y + 2),
-				new Point(x + 1, y + 2),
-				new Point(x - 2, y - 1),
-				new Point(x - 2, y + 1),
-				new Point(x + 2, y - 1),
-				new Point(x + 2, y + 1),
-			};
-		for (int i = 0; i < hinders.length; i++) {
-			Point hinder = hinders[i];
-			Point point1 = points[i * 2], point2 = points[i * 2 + 1];
-			if (!chessBoard.hasPiece(hinder)) {
-				if (chessBoard.isReachablePoint(this, point1)) {
-					validTargets.add(point1);
-				}
-				if (chessBoard.isReachablePoint(this, point2)) {
-					validTargets.add(point2);
-				}
-			}
-		}
+        int[][] params = new int[][] {
+                new int[] {x, y - 1, x - 1, y - 2, x + 1, y - 2},
+                new int[] {x, y + 1, x - 1, y + 2, x + 1, y + 2},
+                new int[] {x - 1, y, x - 2, y - 1, x - 2, y + 1},
+                new int[] {x + 1, y, x + 2, y - 1, x + 2, y + 1}
+        };
+        for (int[] param : params) {
+            Point hinder = new Point(param[0], param[1]);
+            Point target1 = new Point(param[2], param[3]);
+            Point target2 = new Point(param[4], param[5]);
+            if (!chessBoard.hasPiece(hinder)) {
+                if (chessBoard.inBoard(target1)) {
+                    validTargets.add(target1);
+                }
+                if (chessBoard.inBoard(target2)) {
+                    validTargets.add(target2);
+                }
+            }
+        }
 	}
 }

@@ -22,19 +22,20 @@ public class ChessPieceBishop extends ChessPiece {
 		}
 		
 		int x = location.x, y = location.y;
-		Point[] hinders = new Point[] { new Point(x - 1, y - 1), new Point(x + 1, y - 1), new Point(x - 1, y + 1),
-				new Point(x + 1, y + 1), };
-		Point[] points = new Point[] { new Point(x - 2, y - 2), new Point(x + 2, y - 2), new Point(x - 2, y + 2),
-				new Point(x + 2, y + 2), };
-		for (int i = 0; i < hinders.length; i++) {
-			Point hinder = hinders[i];
-			Point point = points[i];
-			if (!chessBoard.hasPiece(hinder)) {
-				if (chessBoard.isReachablePoint(this, point) && chessBoard.inBoardSameBound(location, point)) {
-					validTargets.add(point);
-				}
-			}
-		}
+        int[][] params = new int[][] {
+                new int[] {x - 1, y - 1, x - 2, y - 2},
+                new int[] {x + 1, y - 1, x + 2, y - 2},
+                new int[] {x - 1, y + 1, x - 2, y + 2},
+                new int[] {x + 1, y + 1, x + 2, y + 2},
+        };
+        for (int[] param : params) {
+            Point hinder = new Point(param[0], param[1]);
+            Point target = new Point(param[2], param[3]);
+            if (!chessBoard.hasPiece(hinder)
+                    && chessBoard.inBoardSameBound(location, target)) {
+                validTargets.add(target);
+            }
+        }
 	}
 
 }

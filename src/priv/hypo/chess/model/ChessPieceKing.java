@@ -24,29 +24,33 @@ public class ChessPieceKing extends ChessPiece {
 		}
 
 		int x = location.x, y = location.y;
-		Point[] points = new Point[] { new Point(x - 1, y), new Point(x + 1, y), new Point(x, y - 1),
-				new Point(x, y + 1), };
-		for (Point point : points) {
-			if (chessBoard.isReachablePoint(this, point) && chessBoard.inBoardSamePalace(location, point)) {
-				validTargets.add(point);
-			}
-		}
+        // 单数为x值，双数为y值， x, y
+        int[] params = new int[] {x - 1, y, x + 1, y, x, y - 1, x, y + 1};
+        for (int i = 0; i < params.length / 2; ++i) {
+            Point target = new Point(params[i * 2], params[i * 2 + 1]);
+            if (chessBoard.inBoardSamePalace(location, target)) {
+                validTargets.add(target);
+            }
+        }
 
+        // 判断将是否能够击杀对方的帅
 		ChessPieceKing king = chessBoard.getKing(ApplicationUtil.getEnemy(role));
-		Point kloc = null;
-		if (king != null && (kloc = king.getLocation()) != null) {
-			int init = Math.min(y, kloc.y) + 1, limit = Math.max(y, kloc.y);
-			if (x == kloc.x) {
-				for (int i = init; i < limit; ++i) {
-					if (chessBoard.hasPiece(x, i)) {
-						break;
-					}
-					if (i == limit - 1) {
-						validTargets.add(new Point(king.getLocation()));
-					}
-				}
-			}
-		}
-	}
+        if (king == null) {
+            return;
+        }
+        Point target = new Point(king.getLocation());
+        if (target.x != location.x) {
+            return;
+        }
+        int start = Math.min(y, target.y) + 1, end = Math.max(y, target.y);
+        for (int i = start; i < end; ++i) {
+            if (chessBoard.hasPiece(x, i)) {
+                break;
+            }
+            if (i == end - 1) {
+                validTargets.add(target);
+            }
+        }
+    }
 
 }

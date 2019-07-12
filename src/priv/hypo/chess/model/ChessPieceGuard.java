@@ -22,13 +22,14 @@ public class ChessPieceGuard extends ChessPiece {
 		}
 
 		int x = location.x, y = location.y;
-		Point[] points = new Point[] { new Point(x - 1, y - 1), new Point(x + 1, y - 1), new Point(x - 1, y + 1),
-				new Point(x + 1, y + 1), };
-		for (Point point : points) {
-			if (chessBoard.isReachablePoint(this, point) && chessBoard.inBoardSamePalace(location, point)) {
-				validTargets.add(point);
-			}
-		}
+        // 单数为x值，双数为y值 总共4租
+        int[] params = new int[] {x - 1, y - 1, x + 1, y - 1, x - 1, y + 1, x + 1, y + 1};
+        for (int i = 0; i < params.length / 2; ++i) {
+            Point target = new Point(params[i * 2], params[i * 2 + 1]);
+            if (chessBoard.inBoardSamePalace(location, target)) {
+                validTargets.add(target);
+            }
+        }
 	}
 
 }

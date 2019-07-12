@@ -3,6 +3,7 @@ package priv.hypo.chess.service;
 import java.util.HashMap;
 import java.util.Map;
 
+import priv.hypo.chess.common.Global;
 import priv.hypo.chess.model.Room;
 
 /**
@@ -62,8 +63,8 @@ public class RoomBroadcast extends Thread {
 				data.put("name", room.getName());
 				data.put("status", room.getStatus().name());
 				data.put("role", room.getRole().name());
-				receiver.send(data, "255.255.255.255", ROOM_BROADCAST_PORT);
-				Thread.sleep(1000);
+				receiver.send(data, Global.BROADCAST_HOST, Global.BROADCAST_PORT);
+				Thread.sleep(Global.BROADCAST_INTERVAL);
 			} catch(Exception e) {
 				e.printStackTrace();
 			}

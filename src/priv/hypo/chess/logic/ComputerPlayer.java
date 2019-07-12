@@ -1,6 +1,7 @@
 package priv.hypo.chess.logic;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.List;
 
 import priv.hypo.chess.event.PlayerEvent;
@@ -69,39 +70,66 @@ public class ComputerPlayer implements PlayerListener {
 		}
 		randomMove();
 	}
-	
+
+    /**
+     * 随机获取有效的走棋步骤
+     * @param steps
+     * @return
+     */
+    private ChessStep getValidStep(List<ChessStep> steps) {
+        if (steps == null || steps.isEmpty()) {
+            return null;
+        }
+        List<ChessStep> _steps = new ArrayList<ChessStep>();
+        _steps.addAll(steps);
+        while (!_steps.isEmpty()) {
+            ChessStep step = ApplicationUtil.randomGet(_steps);
+            if (service.isValidStep(step)) {
+                return step;
+            }
+            _steps.remove(step);
+        }
+        return null;
+    }
+
 	/**
 	 * 随机走棋
 	 */
 	private void randomMove() {
-		if (service.isChecking(role)) {
-			List<ChessStep> steps = service.getCheckStrategies();
-			if (steps.isEmpty()) {
-				return;
-			}
-			ChessStep step = steps.get(ApplicationUtil.random(steps.size()));
-			service.move(step.getPiece(), step.getTarget());
+        if (!service.getCurrentRole().equals(role)) {
+            return;
+        }
+		if (service.kingHasThreaten()) {
+			List<ChessStep> steps = service.solveKingThreaten();
+			service.move(ApplicationUtil.randomGet(steps));
 			return;
 		}
-		List<ChessPiece> pieces = chessBoard.getPieces(role);
+        System.out.println("randomMove ");
+        List<ChessStep> steps = new ArrayList<ChessStep>();
+        List<ChessPiece> pieces = chessBoard.getPieces(role);
 		for (ChessPiece piece : pieces) {
 			for (Point target : piece.getValidTargets()) {
 				ChessPiece enemy = chessBoard.getPiece(target);
-				if (enemy != null && enemy.getRole() != piece.getRole()) {
-					if (!service.willLose(piece, target)) {
-						service.move(piece, target);
-						return;
-					}
-				}
+                if (enemy == null) {
+                    continue;
+                }
+                if (enemy.getRole().getEnemy().equals(role)) {
+                    steps.add(new ChessStep(piece, target));
+                }
 			}
 		}
-		Point target = null;
-		ChessPiece piece = null;
-		do {
-			piece = ApplicationUtil.randomGet(pieces);
-			target = ApplicationUtil.randomGet(piece.getValidTargets());
-		} while (service.willLose(piece, target));
-		service.move(piece, target);
+        ChessStep step = getValidStep(steps);
+        if (step == null) {
+            do {
+                ChessPiece piece = ApplicationUtil.randomGet(pieces);
+                Point target = ApplicationUtil.randomGet(piece.getValidTargets());
+                if (target == null) {
+                    continue;
+                }
+                step = new ChessStep(piece, target);
+            } while (!service.isValidStep(step));
+        }
+		service.move(step);
 	}
 	
 }

@@ -24,7 +24,6 @@ public class ChessPiecePawn extends ChessPiece {
 
 		int x = location.x, y = location.y;
 		ChessPieceKing king = chessBoard.getKing(role);
-		Point point = null;
 		if (chessBoard.inBoardUpBound(king.location)) {
 			validTargets.add(new Point(x, y + 1));
 		} else {
@@ -33,13 +32,6 @@ public class ChessPiecePawn extends ChessPiece {
 		if (!chessBoard.inBoardSameBound(king.location, location)) {
 			validTargets.add(new Point(x - 1, y));
 			validTargets.add(new Point(x + 1, y));
-		}
-		Iterator<Point> iter = validTargets.iterator();
-		while (iter.hasNext()) {
-			point = iter.next();
-			if (!chessBoard.isReachablePoint(this, point)) {
-				iter.remove();
-			}
 		}
 	}
 }

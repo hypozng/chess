@@ -7,11 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import priv.hypo.chess.listener.RoomListener;
-import priv.hypo.chess.model.ChessRole;
-import priv.hypo.chess.model.Message;
-import priv.hypo.chess.model.Player;
-import priv.hypo.chess.model.Room;
-import priv.hypo.chess.model.RoomStatus;
+import priv.hypo.chess.model.*;
 import priv.hypo.chess.util.StringUtil;
 
 /**
@@ -96,7 +92,6 @@ public class RoomService implements Receiver.Listener {
 		receiver = new Receiver();
 		receiver.setListener(this);
 		receiver.init();
-		receiver.open();
 		broadcast = new RoomBroadcast(room, receiver);
 		broadcast.start();
 	}
@@ -114,7 +109,6 @@ public class RoomService implements Receiver.Listener {
 		receiver = new Receiver();
 		receiver.setListener(this);
 		receiver.init();
-		receiver.open();
 
 		Map<String, Object> data = new HashMap<String, Object>();
 		data.put("type", "room_join");
@@ -152,16 +146,16 @@ public class RoomService implements Receiver.Listener {
 	/**
 	 * 移动旗子
 	 */
-	public void movePiece(Point origin, Point target) {
+	public void movePiece(ChessStep step) {
 		Map<String, Object> data = new HashMap<String, Object>();
 		data.put("type", "piece_move");
-		data.put("originx", 8 - origin.x);
-		data.put("originy", 9 - origin.y);
-		data.put("targetx", 8 - target.x);
-		data.put("targety", 9 - target.y);
+		data.put("originx", 8 - step.getOrigin().x);
+		data.put("originy", 9 - step.getOrigin().y);
+		data.put("targetx", 8 - step.getTarget().x);
+		data.put("targety", 9 - step.getTarget().y);
 		receiver.send(StringUtil.join(data), player.getAddress(), player.getPort());
 	}
-	
+
 	/**
 	 * 悔棋
 	 */
