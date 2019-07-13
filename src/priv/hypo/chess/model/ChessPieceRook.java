@@ -16,35 +16,23 @@ public class ChessPieceRook extends ChessPiece {
     }
 
     @Override
-    public void findValidTargets(Collection<Point> validTargets) {
-        if (chessBoard == null || validTargets == null) {
-            return;
-        }
-
-        validTargets.clear();
-        int x = location.x, y = location.y;
-        // 此二维数组，每一个子数组代表一个方向
-        int[][] params = new int[][]{
-                new int[]{x - 1, -1, -1, y},
-                new int[]{x + 1, ChessBoard.WIDTH, -1, y},
-                new int[]{y - 1, -1, x, -1},
-                new int[]{y + 1, ChessBoard.HEIGHT, x, -1}
-        };
-        Point target = null;
-        int start = 0, end = 0, increment = 0, tx = 0, ty = 0;
-        for (int[] param : params) {
-            start = param[0]; // 循环的初始值
-            end = param[1]; // 循环的结束值
-            increment = end < 0 ? -1 : 1; // 循环的增量
-            tx = param[2]; // 目标点x值，小于0则使用循环中的变量代替该值，否则保持不变
-            ty = param[3]; // 目标点y值，小于0则使用循环中的变量代替该值，否则保持不变
-            for (int i = start; i != end; i += increment) {
-                target = new Point(tx < 0 ? i : tx, ty < 0 ? i : ty);
-                if (chessBoard.hasPiece(target)) {
-                    validTargets.add(target);
-                    break;
+    protected void findValidTargets(final int x, final int y) {
+        for (int i = 0; i < 2; ++i) {
+            for (int j = -1; j < 2; j += 2) {
+                int s = i == 0 ? x + j : y + j;
+                int e = j == -1 ? -1 : i == 0 ? ChessBoard.WIDTH : ChessBoard.HEIGHT;
+                int ptx = i == 0 ? -1 : x, pty = i == 1 ? -1 : y;
+                for (int k = s; k != e; k += j) {
+                    int tx = ptx == -1 ? k : ptx, ty = pty == -1 ? k : pty;
+                    ChessPiece piece = chessBoard.getPiece(tx, ty);
+                    if (piece != null) {
+                        if (!piece.getRole().equals(role)) {
+                            addValidTarget(tx, ty);
+                        }
+                        break;
+                    }
+                    addValidTarget(tx, ty);
                 }
-                validTargets.add(target);
             }
         }
     }

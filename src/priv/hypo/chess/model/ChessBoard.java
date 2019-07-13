@@ -16,9 +16,23 @@ import java.util.Map;
 public class ChessBoard implements java.io.Serializable {
 	private static final long serialVersionUID = -4201670298962888493L;
 
+    // 棋盘宽度
 	public static final int WIDTH = 9;
 
+    // 棋盘高度
 	public static final int HEIGHT = 10;
+
+    // 双方分界线
+    public static final double BOUNDARY = 4.5;
+
+    // 宫位置x值
+    public static final int PALACE_X = 4;
+
+    // 1号宫位置y值
+    public static final int PALACE_Y1 = 1;
+
+    // 2号宫位置y值
+    public static final int PALACE_Y2 = 8;
 
 	public static final Dimension DEFAULT_SIZE = new Dimension(WIDTH, HEIGHT);
 
@@ -59,7 +73,7 @@ public class ChessBoard implements java.io.Serializable {
 	 * @return 如果该点能够在棋盘中对应一个位置则返回true，否则返回false
 	 */
 	public boolean inBoard(int x, int y) {
-		return (x >= 0 && y >= 0) && (x < WIDTH && y < HEIGHT);
+		return x >= 0 && y >= 0 && x < WIDTH && y < HEIGHT;
 	}
 
 	/**
@@ -168,11 +182,11 @@ public class ChessBoard implements java.io.Serializable {
 	public boolean inBoardSameBound(int x1, int y1, int x2, int y2) {
 		if (inBoardUpBound(x1, y1)) {
 			return inBoardUpBound(x2, y2);
-		} else if (inBoardDownBound(x1, y1)) {
-			return inBoardDownBound(x2, y2);
-		} else {
-			return false;
 		}
+        if (inBoardDownBound(x1, y1)) {
+			return inBoardDownBound(x2, y2);
+		}
+        return false;
 	}
 
 	/**
@@ -400,11 +414,10 @@ public class ChessBoard implements java.io.Serializable {
 	 * @return 指定位置的棋子
 	 */
 	public ChessPiece getPiece(int x, int y) {
-		if (inBoard(x, y)) {
-			return pieces[x][y];
-		} else {
-			return null;
-		}
+		if (!inBoard(x, y)) {
+            return null;
+        }
+        return pieces[x][y];
 	}
 
 	/**

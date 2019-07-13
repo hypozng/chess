@@ -5,7 +5,7 @@ import java.util.Collection;
 
 /**
  * 棋子(马)
- * 
+ *
  * @author Hypo
  */
 public class ChessPieceKnight extends ChessPiece {
@@ -16,29 +16,30 @@ public class ChessPieceKnight extends ChessPiece {
 	}
 
 	@Override
-	public void findValidTargets(Collection<Point> validTargets) {
-		if (chessBoard == null || validTargets == null) {
-			return;
-		}
+	protected void findValidTargets(final int x, final int y) {
+        for (int i = 0; i < 2; ++i) {
+            for (int j = -1; j < 2; j += 2) {
+                int hx = i == 1 ? x : x + j, hy = i == 0 ? y : y + j;
+                if (!chessBoard.inBoard(hx, hy)) {
+                    continue;
+                }
+                if (chessBoard.hasPiece(hx, hy)) {
+                    continue;
+                }
+                int ptx = x == hx ? x : x + (hx - x) * 2;
+                int pty = y == hy ? y : y + (hy - y) * 2;
+                for (int k = -1; k < 2; k += 2) {
+                    int tx = x == hx ? x + k : ptx, ty = y == hy ? y + k : pty;
+                    if (!chessBoard.inBoard(tx, ty)) {
+                        continue;
+                    }
+                    ChessPiece piece = chessBoard.getPiece(tx, ty);
+                    if (piece != null && piece.getRole().equals(role)) {
+                        continue;
+                    }
+                    addValidTarget(tx, ty);
+                }
 
-		int x = location.x, y = location.y;
-        int[][] params = new int[][] {
-                new int[] {x, y - 1, x - 1, y - 2, x + 1, y - 2},
-                new int[] {x, y + 1, x - 1, y + 2, x + 1, y + 2},
-                new int[] {x - 1, y, x - 2, y - 1, x - 2, y + 1},
-                new int[] {x + 1, y, x + 2, y - 1, x + 2, y + 1}
-        };
-        for (int[] param : params) {
-            Point hinder = new Point(param[0], param[1]);
-            Point target1 = new Point(param[2], param[3]);
-            Point target2 = new Point(param[4], param[5]);
-            if (!chessBoard.hasPiece(hinder)) {
-                if (chessBoard.inBoard(target1)) {
-                    validTargets.add(target1);
-                }
-                if (chessBoard.inBoard(target2)) {
-                    validTargets.add(target2);
-                }
             }
         }
 	}

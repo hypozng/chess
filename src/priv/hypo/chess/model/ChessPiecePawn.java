@@ -1,9 +1,5 @@
 package priv.hypo.chess.model;
 
-import java.awt.Point;
-import java.util.Collection;
-import java.util.Iterator;
-
 /**
  * 棋子(兵)
  * 
@@ -17,21 +13,24 @@ public class ChessPiecePawn extends ChessPiece {
 	}
 
 	@Override
-	public void findValidTargets(Collection<Point> validTargets) {
-		if (chessBoard == null || validTargets == null) {
-			return;
-		}
-
-		int x = location.x, y = location.y;
+	protected void findValidTargets(final int x, final int y) {
 		ChessPieceKing king = chessBoard.getKing(role);
-		if (chessBoard.inBoardUpBound(king.location)) {
-			validTargets.add(new Point(x, y + 1));
-		} else {
-			validTargets.add(new Point(x, y - 1));
-		}
-		if (!chessBoard.inBoardSameBound(king.location, location)) {
-			validTargets.add(new Point(x - 1, y));
-			validTargets.add(new Point(x + 1, y));
-		}
+        int ky = king.getLocation().y;
+        int f = ky < ChessBoard.BOUNDARY ? 1 : -1;
+        boolean boundary = ky < ChessBoard.BOUNDARY ? y > ChessBoard.BOUNDARY : y < ChessBoard.BOUNDARY;
+        int e = boundary ? 2 : 1;
+        for (int i = 0; i < e; ++i) {
+            for (int j = -1; j < 2 * i; j += 2) {
+                int tx = i == 0 ? x : x + j, ty = i != 0 ? y : y + f;
+                if (tx < 0 || tx >= ChessBoard.WIDTH) {
+                    continue;
+                }
+                ChessPiece piece = chessBoard.getPiece(tx, ty);
+                if (piece != null && piece.getRole().equals(role)) {
+                    continue;
+                }
+                addValidTarget(tx, ty);
+            }
+        }
 	}
 }

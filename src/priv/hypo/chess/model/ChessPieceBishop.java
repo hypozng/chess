@@ -16,24 +16,27 @@ public class ChessPieceBishop extends ChessPiece {
 	}
 
 	@Override
-	public void findValidTargets(Collection<Point> validTargets) {
-		if(chessBoard == null || validTargets == null) {
-			return;
-		}
-		
-		int x = location.x, y = location.y;
-        int[][] params = new int[][] {
-                new int[] {x - 1, y - 1, x - 2, y - 2},
-                new int[] {x + 1, y - 1, x + 2, y - 2},
-                new int[] {x - 1, y + 1, x - 2, y + 2},
-                new int[] {x + 1, y + 1, x + 2, y + 2},
-        };
-        for (int[] param : params) {
-            Point hinder = new Point(param[0], param[1]);
-            Point target = new Point(param[2], param[3]);
-            if (!chessBoard.hasPiece(hinder)
-                    && chessBoard.inBoardSameBound(location, target)) {
-                validTargets.add(target);
+	protected void findValidTargets(final int x, final int y) {
+        for (int hx = x - 1; hx < x + 2; hx += 2) {
+            for (int hy = y - 1; hy < y + 2; hy += 2) {
+                if (!chessBoard.inBoard(hx, hy)) {
+                    continue;
+                }
+                if (chessBoard.hasPiece(hx, hy)) {
+                    continue;
+                }
+                int tx = x + (hx - x) * 2, ty = y + (hy - y) * 2;
+                if (!chessBoard.inBoard(tx, ty)) {
+                    continue;
+                }
+                if (y < ChessBoard.BOUNDARY ? ty > chessBoard.BOUNDARY : ty < chessBoard.BOUNDARY) {
+                    continue;
+                }
+                ChessPiece piece = chessBoard.getPiece(tx, ty);
+                if (piece != null && piece.getRole().equals(role)) {
+                    continue;
+                }
+                addValidTarget(tx, ty);
             }
         }
 	}

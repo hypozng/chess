@@ -223,6 +223,11 @@ public class GameService implements RoomListener {
 			deselect();
 		}
 		selected = piece;
+        System.out.println("======== selected piece valid targets start ========");
+        for (Point target : selected.getValidTargets()) {
+            System.out.println(target);
+        }
+        System.out.println("======== selected piece valid targets end ========");
 		postEvent(new ChessPieceEvent(ChessPieceEvent.PIECE_SELECTED, selected, selected.getLocation()));
 	}
 
@@ -279,8 +284,9 @@ public class GameService implements RoomListener {
         if (roomService.exist() && roomService.getRole().equals(currentRole)) {
             roomService.movePiece(step);
         }
-
-        checkOver();
+        if (checkOver()) {
+            return;
+        }
 		currentRole = currentRole.getEnemy();
 	}
 
@@ -288,11 +294,12 @@ public class GameService implements RoomListener {
      * 检测是否结束
      * @return
      */
-    public void checkOver() {
+    public boolean checkOver() {
         // 被将军，没有任何有效的解决方案
         if (kingHasThreaten(currentRole.getEnemy())) {
             if (solveKingThreaten(currentRole.getEnemy()).isEmpty()) {
                 winner = currentRole;
+                return true;
             }
         }
 
@@ -302,11 +309,13 @@ public class GameService implements RoomListener {
             for (Point target : king.getValidTargets()) {
                 ChessStep step = new ChessStep(king, target);
                 if (isValidStep(step)) {
-                    return;
+                    return false;
                 }
             }
             winner = currentRole;
+            return true;
         }
+        return false;
     }
 
 	/**
@@ -450,7 +459,7 @@ public class GameService implements RoomListener {
 
         ChessPieceKing king = chessBoard.getKing(role);
 		int kx = king.getLocation().x, ky = king.getLocation().y;
-		List<ChessPiece> pieces = chessBoard.getPieces(currentRole);
+		List<ChessPiece> pieces = chessBoard.getPieces(role);
 
 		// 方案一 (吃掉将军的棋子)
 		for (ChessPiece threaten : threatens) {
@@ -536,11 +545,11 @@ public class GameService implements RoomListener {
                 }
             }
 		}
-        System.out.println("======== solve king threaten steps ========");
+        System.out.println("======== solve king threaten steps start ========");
         for (ChessStep step : steps) {
             System.out.println(step);
         }
-        System.out.println("================================");
+        System.out.println("======== solve king threaten steps start ========");
 		return steps;
 	}
 

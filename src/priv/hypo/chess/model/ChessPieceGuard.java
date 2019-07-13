@@ -16,18 +16,20 @@ public class ChessPieceGuard extends ChessPiece {
 	}
 
 	@Override
-	public void findValidTargets(Collection<Point> validTargets) {
-		if(chessBoard == null || validTargets == null) {
-			return;
-		}
-
-		int x = location.x, y = location.y;
+	protected void findValidTargets(final int x, final int y) {
         // 单数为x值，双数为y值 总共4租
-        int[] params = new int[] {x - 1, y - 1, x + 1, y - 1, x - 1, y + 1, x + 1, y + 1};
-        for (int i = 0; i < params.length / 2; ++i) {
-            Point target = new Point(params[i * 2], params[i * 2 + 1]);
-            if (chessBoard.inBoardSamePalace(location, target)) {
-                validTargets.add(target);
+        int palaceY = y < ChessBoard.BOUNDARY ? ChessBoard.PALACE_Y1 : ChessBoard.PALACE_Y2;
+        for (int tx = x - 1; tx < x + 2; tx += 2) {
+            for (int ty = y - 1; ty < y + 2; ty += 2) {
+                if (Math.abs(tx - ChessBoard.PALACE_X) > 1
+                        || Math.abs(ty - palaceY) > 1) {
+                    continue;
+                }
+                ChessPiece piece = chessBoard.getPiece(tx, ty);
+                if (piece != null && piece.getRole().equals(role)) {
+                    continue;
+                }
+                addValidTarget(tx, ty);
             }
         }
 	}

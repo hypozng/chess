@@ -18,39 +18,35 @@ public class ChessPieceKing extends ChessPiece {
 	}
 
 	@Override
-	public void findValidTargets(Collection<Point> validTargets) {
-		if (chessBoard == null || validTargets == null) {
-			return;
-		}
-
-		int x = location.x, y = location.y;
-        // 单数为x值，双数为y值， x, y
-        int[] params = new int[] {x - 1, y, x + 1, y, x, y - 1, x, y + 1};
-        for (int i = 0; i < params.length / 2; ++i) {
-            Point target = new Point(params[i * 2], params[i * 2 + 1]);
-            if (chessBoard.inBoardSamePalace(location, target)) {
-                validTargets.add(target);
+	protected void findValidTargets(final int x, final int y) {
+        int palaceY = y < ChessBoard.BOUNDARY ? ChessBoard.PALACE_Y1 : ChessBoard.PALACE_Y2;
+        for (int i = 0; i < 2; ++i) {
+            for (int j = -1; j < 2; j += 2) {
+                int tx = i == 0 ? x : x + j, ty = i == 1 ? y : y + j;
+                if (Math.abs(tx - ChessBoard.PALACE_X) > 1
+                        || Math.abs(ty - palaceY) > 1) {
+                    continue;
+                }
+                ChessPiece piece = chessBoard.getPiece(tx, ty);
+                if (piece != null && piece.getRole().equals(role)) {
+                    continue;
+                }
+                addValidTarget(tx, ty);
             }
         }
-
         // 判断将是否能够击杀对方的帅
-		ChessPieceKing king = chessBoard.getKing(ApplicationUtil.getEnemy(role));
-        if (king == null) {
+		ChessPieceKing king = chessBoard.getKing(role.getEnemy());
+        int kx = king.getLocation().x, ky = king.getLocation().y;
+        if (kx != x) {
             return;
         }
-        Point target = new Point(king.getLocation());
-        if (target.x != location.x) {
-            return;
-        }
-        int start = Math.min(y, target.y) + 1, end = Math.max(y, target.y);
-        for (int i = start; i < end; ++i) {
+        int s = Math.min(y, ky) + 1, e = Math.max(y, ky);
+        for (int i = s; i < e; ++i) {
             if (chessBoard.hasPiece(x, i)) {
-                break;
-            }
-            if (i == end - 1) {
-                validTargets.add(target);
+                return;
             }
         }
+        addValidTarget(kx, ky);
     }
 
 }

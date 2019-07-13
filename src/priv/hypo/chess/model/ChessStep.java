@@ -22,7 +22,7 @@ public class ChessStep {
         this.origin = piece.getLocation().getLocation();
         this.target = target.getLocation();
         if (origin.equals(target)) {
-            throw new RuntimeException("The origin is the same as the target.");
+            throw new RuntimeException("The origin is the same as the target. " + this);
         }
     }
 
@@ -44,11 +44,15 @@ public class ChessStep {
      * @return
      */
     public ChessStep back() {
+        if (piece.getLocation().equals(origin)) {
+            System.out.println("not move yet. " + this);
+            return null;
+        }
         return new ChessStep(piece, origin);
     }
 
 	// Methods
 	public String toString() {
-		return String.format("step[piece=%s, origin=%s target=%s]", piece, piece.getLocation(), target);
+		return String.format("step[piece=%s, target=%s]", piece, target);
 	}
 }

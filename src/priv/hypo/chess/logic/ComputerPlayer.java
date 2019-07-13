@@ -65,10 +65,10 @@ public class ComputerPlayer implements PlayerListener {
 
 	@Override
 	public void onPlay(PlayerEvent e) {
-		if (!e.getRole().equals(role)) {
-			return;
-		}
-		randomMove();
+        if (service.isOver() || !e.getRole().equals(role)) {
+            return;
+        }
+		think();
 	}
 
     /**
@@ -93,43 +93,64 @@ public class ComputerPlayer implements PlayerListener {
     }
 
 	/**
-	 * 随机走棋
+	 * 思考如何走棋
 	 */
-	private void randomMove() {
-        if (!service.getCurrentRole().equals(role)) {
-            return;
-        }
-		if (service.kingHasThreaten()) {
-			List<ChessStep> steps = service.solveKingThreaten();
-			service.move(ApplicationUtil.randomGet(steps));
-			return;
-		}
-        System.out.println("randomMove ");
-        List<ChessStep> steps = new ArrayList<ChessStep>();
-        List<ChessPiece> pieces = chessBoard.getPieces(role);
-		for (ChessPiece piece : pieces) {
-			for (Point target : piece.getValidTargets()) {
-				ChessPiece enemy = chessBoard.getPiece(target);
-                if (enemy == null) {
-                    continue;
-                }
-                if (enemy.getRole().getEnemy().equals(role)) {
-                    steps.add(new ChessStep(piece, target));
-                }
-			}
-		}
-        ChessStep step = getValidStep(steps);
+	private void think() {
+        ChessStep step = null;
         if (step == null) {
-            do {
-                ChessPiece piece = ApplicationUtil.randomGet(pieces);
-                Point target = ApplicationUtil.randomGet(piece.getValidTargets());
-                if (target == null) {
-                    continue;
-                }
-                step = new ChessStep(piece, target);
-            } while (!service.isValidStep(step));
+            step = emergency();
+        }
+        if (step == null) {
+            step = attack();
+        }
+        if (step == null) {
+            step = random();
         }
 		service.move(step);
 	}
-	
+
+    /**
+     * 解决将军
+     * @return
+     */
+    private ChessStep emergency() {
+        if (service.kingHasThreaten()) {
+            List<ChessStep> steps = service.solveKingThreaten();
+            return ApplicationUtil.randomGet(steps);
+        }
+        return null;
+    }
+
+    /**
+     * 攻击
+     * @return
+     */
+    private ChessStep attack() {
+        List<ChessStep> steps = new ArrayList<ChessStep>();
+        List<ChessPiece> pieces = chessBoard.getPieces(role);
+        List<ChessPiece> enemies = chessBoard.getPieces(role.getEnemy());
+        for (ChessPiece enemy : enemies) {
+            for (ChessPiece piece : pieces) {
+                if (piece.getValidTargets().contains(enemy.getLocation())) {
+                    steps.add(new ChessStep(piece, enemy.getLocation()));
+                }
+            }
+        }
+        return getValidStep(steps);
+    }
+
+    /**
+     * 随机走棋
+     * @return
+     */
+    private ChessStep random() {
+        List<ChessStep> steps = new ArrayList<ChessStep>();
+        List<ChessPiece> pieces = chessBoard.getPieces(role);
+        for (ChessPiece piece : pieces) {
+            for (Point target : piece.getValidTargets()) {
+                steps.add(new ChessStep(piece, target));
+            }
+        }
+        return getValidStep(steps);
+    }
 }
